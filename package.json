@@ -1,0 +1,16 @@
+{
+  "name": "graphql-practice-photo-share",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:mie998/graphql-practice-photo-share.git",
+  "author": "mie998 <kei.west.post920@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+      "start": "nodemon -e js,json,graphql"
+  },
+  "dependencies": {
+    "apollo-server": "^3.1.2",
+    "graphql": "^15.5.1",
+    "nodemon": "^2.0.12"
+  }
+}
