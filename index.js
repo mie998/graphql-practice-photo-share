@@ -1,34 +1,21 @@
 const { ApolloServer } = require("apollo-server");
+const { readFileSync } = require("fs");
+const { users, photos, tags } = require("./sample_data");
 
-const typeDefs = `
-  type Photo {
-    id: ID!
-    url: String!
-    name: String!
-    description: String
-  }
-
-  type Query {
-    totalPhotos: Int!
-  }
-
-  type Mutation {
-    postPhoto(name: String! description: String): Photo!
-  }
-`;
+let typeDefs = readFileSync("./typeDefs.graphql", "UTF-8");
 
 let _id = 0;
-let photos = [];
 
 const resolvers = {
   Query: {
     totalPhotos: () => photos.length,
+    allPhotos: () => photos,
   },
   Mutation: {
     postPhoto(parent, args) {
       let newPhoto = {
         id: _id++,
-        ...args,
+        ...args.input,
       };
       photos.push(newPhoto);
       return newPhoto;
@@ -36,6 +23,20 @@ const resolvers = {
   },
   Photo: {
     url: (parent) => `http://yoursite.com/img/${parent.id}.jpg`,
+    taggedUsers: (parent) => {
+      return tags
+        .filter((t) => t.photoID === parent.id)
+        .map((t) => t.userID)
+        .filter((uid) => users.filter((u) => u.githubLogin === uid));
+    },
+  },
+  User: {
+    inPhotos: (parent) => {
+      tags
+        .filter((tag) => tag.userID === parent.userID)
+        .map((tag) => tag.photoID)
+        .filter((pid) => photos.filter((p) => p.githubLogin === pid));
+    },
   },
 };
 
