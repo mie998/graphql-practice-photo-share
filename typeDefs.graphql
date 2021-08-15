@@ -6,6 +6,8 @@ enum PhotoCategory {
   GRAPHIC
 }
 
+scalar DateTime
+
 type Photo {
   id: ID!
   url: String!
@@ -13,6 +15,7 @@ type Photo {
   description: String
   category: PhotoCategory!
   taggedUsers: [User!]!
+  created: DateTime!
 }
 
 type User {
@@ -24,7 +27,7 @@ type User {
 
 type Query {
   totalPhotos: Int!
-  allPhotos: [Photo!]!
+  allPhotos(after: DateTime!): [Photo!]!
 }
 
 input PostPhotoInput {
