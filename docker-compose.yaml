@@ -1,0 +1,38 @@
+version: "3"
+
+services:
+  node:
+    restart: always
+    container_name: node
+    build: .
+    ports:
+      - 80:3000
+    volumes:
+      - ./:/code
+
+  mongo:
+    image: mongo
+    container_name: mongo_DB
+    restart: always
+    command:
+      - mongod
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongodb:/data/db
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    env_file: .env
+
+  mongo-data:
+    image: busybox
+
+volumes:
+  mongodb:

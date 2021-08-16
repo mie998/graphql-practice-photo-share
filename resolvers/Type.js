@@ -1,29 +1,21 @@
-const { users, photos, tags } = require("./sample_data");
-const { GraphQLScalarType } = require("graphql");
+const { ObjectID } = require("mongodb");
 
 module.exports = {
-  Photo: {
-    url: (parent) => `http://yoursite.com/img/${parent.id}.jpg`,
-    taggedUsers: (parent) => {
-      return tags
-        .filter((t) => t.photoID === parent.id)
-        .map((t) => t.userID)
-        .map((uid) => users.find((u) => u.githubLogin === uid));
-    },
-  },
-  User: {
-    inPhotos: (parent) => {
-      tags
-        .filter((tag) => tag.userID === parent.id)
-        .map((tag) => tag.photoID)
-        .map((pid) => photos.find((p) => p.githubLogin === pid));
-    },
-  },
-  DateTime: new GraphQLScalarType({
-    name: `DateTime`,
-    description: `A valid date time value.`,
-    parseValue: (value) => new Date(value),
-    serialize: (value) => new Date(value).toISOString(),
-    parseLiteral: (ast) => ast.value,
-  }),
+  me: (parent, args, { currentUser }) => currentUser,
+
+  totalPhotos: (parent, args, { db }) =>
+    db.collection("photos").estimatedDocumentCount(),
+
+  allPhotos: (parent, args, { db }) => db.collection("photos").find().toArray(),
+
+  Photo: (parent, args, { db }) =>
+    db.collection("photos").findOne({ _id: ObjectID(args.id) }),
+
+  totalUsers: (parent, args, { db }) =>
+    db.collection("users").estimatedDocumentCount(),
+
+  allUsers: (parent, args, { db }) => db.collection("users").find().toArray(),
+
+  User: (parent, args, { db }) =>
+    db.collection("users").findOne({ githubLogin: args.login }),
 };
