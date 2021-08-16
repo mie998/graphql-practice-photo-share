@@ -1,48 +1,58 @@
 const express = require("express");
+const { ApolloServer } = require("apollo-server-express");
+const { MongoClient } = require("mongodb");
+const { readFileSync } = require("fs");
 const expressPlayground =
   require("graphql-playground-middleware-express").default;
-const { MongoClient } = require("mongodb");
-const { ApolloServer } = require("apollo-server-express");
-const { readFileSync } = require("fs");
-
-const typeDefs = readFileSync("./typeDefs.graphql", "UTF-8");
 const resolvers = require("./resolvers");
+
 require("dotenv").config();
+var typeDefs = readFileSync("./typeDefs.graphql", "UTF-8");
 
-let _id = 0;
-
-const init = async () => {
-  const MONGO_DB = process.env.ME_CONFIG_MONGODB_URL;
-  const client = new MongoClient(MONGO_DB, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+async function start() {
+  const app = express();
+  const MONGO_DB = process.env.DB_HOST;
+  let db;
 
   try {
-    await client.connect();
-  } catch (e) {
-    console.error(e);
+    const client = await MongoClient.connect(MONGO_DB, {
+      useNewUrlParser: true,
+    });
+    db = client.db();
+  } catch (error) {
+    console.log(`
+      Mongo DB Host not found!
+      please add DB_HOST environment variable to .env file
+      exiting...
+    `);
+    process.exit(1);
   }
 
-  const db = client.db();
-  const context = { db };
-
-  const app = express();
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context,
+    context: async ({ req }) => {
+      const githubToken = req.headers.authorization;
+      const currentUser = await db.collection("users").findOne({ githubToken });
+      return { db, currentUser };
+    },
   });
+
   server.applyMiddleware({ app });
 
-  app.get("/", (req, res) => res.end("Welcome to the PhotoShare API"));
   app.get("/playground", expressPlayground({ endpoint: "/graphql" }));
+  app.get("/", (req, res) => {
+    let url = `https://github.com/login/oauth/authorize`;
+    res.set("client_id", process.env.CLIENT_ID);
+    res.set("scope", "user");
+    res.end(`<a href="${url}">Sign In with Github</a>`);
+  });
 
   app.listen({ port: 4000 }, () =>
     console.log(
-      `GraphQL Server running @ http://localhost:4000${server.graphqlPath}`
+      `GraphQL Server running at http://localhost:4000${server.graphqlPath}`
     )
   );
-};
+}
 
-init().catch(console.error);
+start();

@@ -1,21 +1,52 @@
+const { GraphQLScalarType } = require("graphql");
 const { ObjectID } = require("mongodb");
 
 module.exports = {
-  me: (parent, args, { currentUser }) => currentUser,
+  Photo: {
+    id: (parent) => parent.id || parent._id,
 
-  totalPhotos: (parent, args, { db }) =>
-    db.collection("photos").estimatedDocumentCount(),
+    url: (parent) => `/img/photos/${parent._id}.jpg`,
 
-  allPhotos: (parent, args, { db }) => db.collection("photos").find().toArray(),
+    postedBy: (parent, args, { db }) =>
+      db.collection("users").findOne({ githubLogin: parent.userID }),
 
-  Photo: (parent, args, { db }) =>
-    db.collection("photos").findOne({ _id: ObjectID(args.id) }),
+    taggedUsers: async (parent, args, { db }) => {
+      const tags = await db.collection("tags").find().toArray();
 
-  totalUsers: (parent, args, { db }) =>
-    db.collection("users").estimatedDocumentCount(),
+      const logins = tags
+        .filter((t) => t.photoID === parent._id.toString())
+        .map((t) => t.githubLogin);
 
-  allUsers: (parent, args, { db }) => db.collection("users").find().toArray(),
+      return db
+        .collection("users")
+        .find({ githubLogin: { $in: logins } })
+        .toArray();
+    },
+  },
 
-  User: (parent, args, { db }) =>
-    db.collection("users").findOne({ githubLogin: args.login }),
+  User: {
+    postedPhotos: (parent, args, { db }) =>
+      db.collection("photos").find({ userID: parent.githubLogin }).toArray(),
+
+    inPhotos: async (parent, args, { db }) => {
+      const tags = await db.collection("tags").find().toArray();
+
+      const photoIDs = tags
+        .filter((t) => t.githubLogin === parent.githubLogin)
+        .map((t) => ObjectID(t.photoID));
+
+      return db
+        .collection("photos")
+        .find({ _id: { $in: photoIDs } })
+        .toArray();
+    },
+  },
+
+  DateTime: new GraphQLScalarType({
+    name: "DateTime",
+    description: "A valid date time value.",
+    parseValue: (value) => new Date(value),
+    serialize: (value) => new Date(value).toISOString(),
+    parseLiteral: (ast) => ast.value,
+  }),
 };
