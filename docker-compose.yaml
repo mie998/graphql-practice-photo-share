@@ -1,15 +1,6 @@
 version: "3"
 
 services:
-  node:
-    restart: always
-    container_name: node
-    build: .
-    ports:
-      - 80:3000
-    volumes:
-      - ./:/code
-
   mongo:
     image: mongo
     container_name: mongo_DB
@@ -34,5 +25,6 @@ services:
   mongo-data:
     image: busybox
 
+# the volume for persistence
 volumes:
   mongodb:
