@@ -5,6 +5,7 @@ const { readFileSync } = require("fs");
 const expressPlayground =
   require("graphql-playground-middleware-express").default;
 const resolvers = require("./resolvers");
+const fetch = require("node-fetch");
 
 require("dotenv").config();
 var typeDefs = readFileSync("./typeDefs.graphql", "UTF-8");
@@ -42,10 +43,25 @@ async function start() {
 
   app.get("/playground", expressPlayground({ endpoint: "/graphql" }));
   app.get("/", (req, res) => {
-    let url = `https://github.com/login/oauth/authorize`;
-    res.set("client_id", process.env.CLIENT_ID);
-    res.set("scope", "user");
-    res.end(`<a href="${url}">Sign In with Github</a>`);
+    // res.set("client_id", process.env.CLIENT_ID);
+    // res.set("scope", "user");
+    res.end(
+      `<button onclick="getGithubCode()">Sign In with Github</button>
+      <script>
+        const getGithubCode = () => {
+          const url = "https://github.com/login/oauth/authorize";
+          const method = "GET";
+          const headers = {
+            Authorization: "token ${process.env.CLIENT_ID}",
+          };
+          fetch(url, { method, mode: 'no-cors', headers })
+            .then((res) => res.json())
+            .then(console.log)
+            .catch(console.error);
+        };
+      </script>
+      `
+    );
   });
 
   app.listen({ port: 4000 }, () =>
