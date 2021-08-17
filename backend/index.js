@@ -54,10 +54,9 @@ async function start() {
           const headers = {
             Authorization: "token ${process.env.CLIENT_ID}",
           };
-          fetch(url, { method, mode: 'no-cors', headers })
-            .then((res) => res.json())
+          fetch(url, { method, mode: 'no-cors', redirect: 'manual', headers })
             .then(console.log)
-            .catch(console.error);
+            .catch(console.error)
         };
       </script>
       `
